@@ -1,4 +1,4 @@
-module github.com/leekchan/accounting
+module github.com/Dmitriy-Vas/accounting
 
 require (
 	github.com/cockroachdb/apd v1.1.0

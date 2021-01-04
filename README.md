@@ -1,7 +1,7 @@
 # accounting - money and currency formatting for golang
 [![Build Status](https://travis-ci.org/leekchan/accounting.svg?branch=master)](https://travis-ci.org/leekchan/accounting)
 [![Coverage Status](https://coveralls.io/repos/leekchan/accounting/badge.svg?branch=master&service=github)](https://coveralls.io/github/leekchan/accounting?branch=master)
-[![GoDoc](https://godoc.org/github.com/leekchan/accounting?status.svg)](https://godoc.org/github.com/leekchan/accounting)
+[![GoDoc](https://godoc.org/github.com/Dmitriy-Vas/accounting?status.svg)](https://godoc.org/github.com/Dmitriy-Vas/accounting)
 
 accounting is a library for money and currency formatting. (inspired by [accounting.js](https://github.com/openexchangerates/accounting.js))
 
@@ -9,7 +9,7 @@ accounting is a library for money and currency formatting. (inspired by [account
 ## Quick Start
 
 ```
-go get github.com/leekchan/accounting
+go get github.com/Dmitriy-Vas/accounting
 ```
 
 example.go
@@ -22,7 +22,7 @@ import (
     "math/big"
 
     "github.com/shopspring/decimal"
-    "github.com/leekchan/accounting"
+    "github.com/Dmitriy-Vas/accounting"
 )
 
 func main() {
