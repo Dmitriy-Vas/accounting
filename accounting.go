@@ -9,36 +9,36 @@ import (
 )
 
 type Accounting struct {
-	Symbol         string // currency symbol (required)
-	Precision      int    // currency precision (decimal places) (optional / default: 0)
-	Thousand       string // thousand separator (optional / default: ,)
-	Decimal        string // decimal separator (optional / default: .)
-	Format         string // simple format string allows control of symbol position (%v = value, %s = symbol) (default: %s%v)
-	FormatNegative string // format string for negative values (optional / default: strings.Replace(strings.Replace(accounting.Format, "-", "", -1), "%v", "-%v", -1))
-	FormatZero     string // format string for zero values (optional / default: Format)
-	isInitialized bool // is set to true if used via DefaultAccounting or NewAccounting
+	Symbol          string // currency symbol (required)
+	Precision       int    // currency precision (decimal places) (optional / default: 0)
+	Thousand        string // thousand separator (optional / default: ,)
+	Decimal         string // decimal separator (optional / default: .)
+	WithZeroDecimal bool   // add decimals even if they are 0 (optional / default: false)
+	Format          string // simple format string allows control of symbol position (%v = value, %s = symbol) (default: %s%v)
+	FormatNegative  string // format string for negative values (optional / default: strings.Replace(strings.Replace(accounting.Format, "-", "", -1), "%v", "-%v", -1))
+	FormatZero      string // format string for zero values (optional / default: Format)
+	isInitialized   bool   // is set to true if used via DefaultAccounting or NewAccounting
 }
-
 
 // DefaultAccounting returns the Accounting with default settings
 func DefaultAccounting(symbol string, precision int) *Accounting {
-	ac := &Accounting{Symbol:symbol,Precision:precision}
+	ac := &Accounting{Symbol: symbol, Precision: precision}
 	ac.init()
 	ac.isInitialized = true
 	return ac
 }
 
-
 // NewAccounting returns the Accounting with default settings
-func NewAccounting(symbol string, precision int, thousand, decimal, format, formatNegative, formatZero string) *Accounting {
+func NewAccounting(symbol string, precision int, thousand, decimal, format, formatNegative, formatZero string, withZeroDecimal bool) *Accounting {
 	ac := &Accounting{
-		Symbol: symbol,
-		Precision: precision,
-		Thousand: thousand,
-		Decimal: decimal,
-		Format: format,
-		FormatNegative: formatNegative,
-		FormatZero: formatZero,
+		Symbol:          symbol,
+		Precision:       precision,
+		Thousand:        thousand,
+		Decimal:         decimal,
+		WithZeroDecimal: withZeroDecimal,
+		Format:          format,
+		FormatNegative:  formatNegative,
+		FormatZero:      formatZero,
 	}
 	ac.isInitialized = true
 	return ac
@@ -107,6 +107,11 @@ func (accounting *Accounting) formatMoneyString(formattedNumber string) string {
 
 	result := strings.Replace(format, "%s", accounting.Symbol, -1)
 	result = strings.Replace(result, "%v", formattedNumber, -1)
+	if !accounting.WithZeroDecimal && accounting.Precision != 0 {
+		if decimalIndex := strings.LastIndex(result, accounting.Decimal); decimalIndex != -1 {
+			result = result[:decimalIndex] + strings.TrimRight(strings.TrimRight(result[decimalIndex:], "0"), accounting.Decimal)
+		}
+	}
 
 	return result
 }
