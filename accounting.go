@@ -9,16 +9,24 @@ import (
 )
 
 type Accounting struct {
-	Symbol          string // currency symbol (required)
-	Precision       int    // currency precision (decimal places) (optional / default: 0)
-	Thousand        string // thousand separator (optional / default: ,)
-	Decimal         string // decimal separator (optional / default: .)
-	WithZeroDecimal bool   // add decimals even if they are 0 (optional / default: false)
-	Format          string // simple format string allows control of symbol position (%v = value, %s = symbol) (default: %s%v)
-	FormatNegative  string // format string for negative values (optional / default: strings.Replace(strings.Replace(accounting.Format, "-", "", -1), "%v", "-%v", -1))
-	FormatZero      string // format string for zero values (optional / default: Format)
-	isInitialized   bool   // is set to true if used via DefaultAccounting or NewAccounting
+	Symbol            string // currency symbol (required)
+	Precision         int    // currency precision (decimal places) (optional / default: 0)
+	Thousand          string // thousand separator (optional / default: ,)
+	Decimal           string // decimal separator (optional / default: .)
+	DecimalFormatting DecimalFormattingType
+	Format            string // simple format string allows control of symbol position (%v = value, %s = symbol) (default: %s%v)
+	FormatNegative    string // format string for negative values (optional / default: strings.Replace(strings.Replace(accounting.Format, "-", "", -1), "%v", "-%v", -1))
+	FormatZero        string // format string for zero values (optional / default: Format)
+	isInitialized     bool   // is set to true if used via DefaultAccounting or NewAccounting
 }
+
+type DecimalFormattingType int
+
+const (
+	WithoutZeroDecimal1 DecimalFormattingType = iota // 50 with precision 2 -> 50, 50.2 -> 50.2
+	WithoutZeroDecimal2                              // 50 with precision 2 -> 50, 50.2 -> 50.20
+	WithZeroDecimal                                  // 50 with precision 2 -> 50.00, 50.2 -> 50.20
+)
 
 // DefaultAccounting returns the Accounting with default settings
 func DefaultAccounting(symbol string, precision int) *Accounting {
@@ -29,16 +37,16 @@ func DefaultAccounting(symbol string, precision int) *Accounting {
 }
 
 // NewAccounting returns the Accounting with default settings
-func NewAccounting(symbol string, precision int, thousand, decimal, format, formatNegative, formatZero string, withZeroDecimal bool) *Accounting {
+func NewAccounting(symbol string, precision int, thousand, decimal, format, formatNegative, formatZero string, decimalFormat DecimalFormattingType) *Accounting {
 	ac := &Accounting{
-		Symbol:          symbol,
-		Precision:       precision,
-		Thousand:        thousand,
-		Decimal:         decimal,
-		WithZeroDecimal: withZeroDecimal,
-		Format:          format,
-		FormatNegative:  formatNegative,
-		FormatZero:      formatZero,
+		Symbol:            symbol,
+		Precision:         precision,
+		Thousand:          thousand,
+		Decimal:           decimal,
+		DecimalFormatting: decimalFormat,
+		Format:            format,
+		FormatNegative:    formatNegative,
+		FormatZero:        formatZero,
 	}
 	ac.isInitialized = true
 	return ac
@@ -89,6 +97,9 @@ func (accounting *Accounting) init() {
 	if accounting.FormatZero == "" {
 		accounting.FormatZero = accounting.Format
 	}
+	if accounting.DecimalFormatting < WithoutZeroDecimal1 || accounting.DecimalFormatting > WithZeroDecimal {
+		accounting.DecimalFormatting = WithoutZeroDecimal1
+	}
 }
 
 func (accounting *Accounting) formatMoneyString(formattedNumber string) string {
@@ -107,9 +118,19 @@ func (accounting *Accounting) formatMoneyString(formattedNumber string) string {
 
 	result := strings.Replace(format, "%s", accounting.Symbol, -1)
 	result = strings.Replace(result, "%v", formattedNumber, -1)
-	if !accounting.WithZeroDecimal && accounting.Precision != 0 {
-		if decimalIndex := strings.LastIndex(result, accounting.Decimal); decimalIndex != -1 {
-			result = result[:decimalIndex] + strings.TrimRight(strings.TrimRight(result[decimalIndex:], "0"), accounting.Decimal)
+	if accounting.Precision != 0 {
+		switch accounting.DecimalFormatting {
+		case WithoutZeroDecimal1:
+			if decimalIndex := strings.LastIndex(result, accounting.Decimal); decimalIndex != -1 {
+				result = result[:decimalIndex] + strings.TrimRight(strings.TrimRight(result[decimalIndex:], "0"), accounting.Decimal)
+			}
+		case WithoutZeroDecimal2:
+			zeroIndex := strings.LastIndex(formattedZero, accounting.Decimal)
+			resultIndex := strings.LastIndex(result, accounting.Decimal)
+			if zeroIndex != -1 && resultIndex != -1 && formattedZero[zeroIndex:] == result[resultIndex:] {
+				result = result[:resultIndex]
+			}
+		case WithZeroDecimal:
 		}
 	}
 
